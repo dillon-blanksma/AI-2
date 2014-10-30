@@ -326,6 +326,65 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
           legal moves.
         """
         "*** YOUR CODE HERE ***"
+        numAgents = gameState.getNumAgents()
+        PACMAN = 0 #index of PACMAN
+        
+        def dispatch(gameState, index, depth):
+            #when the index equals the number of ghosts, reset back to PACMAN and decrease the depth by 1
+            if index == numAgents:
+                depth -= 1
+                index = PACMAN
+            
+            #Either PACMAN wins or the ghosts win or we have reached our depth so return the score   
+            if gameState.isWin() or gameState.isLose() or depth == 0:
+                return self.evaluationFunction(gameState)
+            #max agent
+            elif index == PACMAN:
+                return max_value(gameState, index, depth)
+            #min value
+            else: return exp_value(gameState, index, depth)
+        
+        """PACMAN"""    
+        def max_value(gameState, agentIndex, depth):
+            v = float("-inf")
+            legalActions = gameState.getLegalActions(agentIndex)
+            #evaluate each possible action for PACMAN
+            for action in legalActions:
+                successor = gameState.generateSuccessor(agentIndex, action)
+                v = max(v, dispatch(successor, agentIndex + 1, depth)) #increase the agent index here
+            return v
+                
+            
+        """Ghosts"""    
+        def exp_value(gameState, agentIndex, depth):
+            v = 0 #assume nuetral value
+            legalActions = gameState.getLegalActions(agentIndex)
+            count = 0
+            #evaluate each possible action for a ghost
+            for action in legalActions:
+                successor = gameState.generateSuccessor(agentIndex, action)
+                v += dispatch(successor, agentIndex+1, depth) #add values of each action together
+                """keep track of the number of actions taken (successors expanded)
+                This algorithm will not work with unequal probability distributions
+                """
+                count += 1 
+                v /= count #calculate the average assuming equal probability among actions
+            return v
+        
+        #this runs first to start the original dispatch
+        legalActions = gameState.getLegalActions(PACMAN)
+        bestScore = float("-inf")
+        bestAction = None
+        
+        for action in legalActions:
+            successor = gameState.generateSuccessor(PACMAN, action)
+            score = dispatch(successor, 1, self.depth) #first dispatch
+            #the best score will be associated with an action
+            if score > bestScore:
+                bestScore = score
+                bestAction = action
+           
+        return bestAction
         util.raiseNotDefined()
 
 def betterEvaluationFunction(currentGameState):
