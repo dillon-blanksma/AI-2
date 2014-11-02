@@ -100,7 +100,7 @@ class ReflexAgent(Agent):
         distancesToActiveGhosts = [util.manhattanDistance(newPos, ghost) for ghost in activeGhostPositions]
         distToClosestGhost = min(distancesToActiveGhosts)
              
-        score = currentScore - (distToClosestFood) +  (distToClosestGhost) + 1.0/(numFood+1)       
+        score = currentScore - (distToClosestFood) +  (distToClosestGhost)       
 
         return score
 
