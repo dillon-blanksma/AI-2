@@ -367,6 +367,45 @@ def betterEvaluationFunction(currentGameState):
       DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
+    import search
+    def mazeDistance(point1, point2, gameState):
+        x1, y1 = point1
+        x2, y2 = point2
+        walls = gameState.getWalls()
+        
+        assert not walls[int(x1)][int(y1)], 'point1 is a wall: ' + str(point1)
+        assert not walls[int(x2)][int(y2)], 'point2 is a wall: ' + str(point2)
+        
+        prob = PositionSearchProblem(gameState, start=point1, goal=point2, warn=False, visualize=False)
+        return len(search.bfs(prob))
+    
+    position = currentGameState.getPacmanPosition()
+    foodList = currentGameState.getFood().asList()
+    powerPellets = currentGameState.getCapsules()
+    
+    score = len(foodList) * -100
+    
+    """get the actual maze distance to the closest ghost using BFS search"""
+    distances = [mazeDistance(position, ghostState.getPosition(), currentGameState) for ghostState in currentGameState.getGhostStates()]
+    minDist = min(distances)
+    if minDist > 3: 
+        score += minDist * 30
+    else:
+        score += minDist * -30
+    
+    """get the closest distance to a food pellet"""
+    distancesToFood = [util.manhattanDistance(position, food) for food in foodList] 
+    if distancesToFood != []:
+        distToClosestFood = min(distancesToFood)
+        
+    distancesToPower = [util.manhattanDistance(position, power) for power in powerPellets]
+    if distancesToPower != []:
+        distToClosestPower = min(distancesToPower)
+        
+    score -= 2 * distToClosestFood
+    score -= 120 * distToClosestPower
+                   
+    return score
     util.raiseNotDefined()
 
 # Abbreviation
