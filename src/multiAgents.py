@@ -368,6 +368,11 @@ def betterEvaluationFunction(currentGameState):
     """
     "*** YOUR CODE HERE ***"
     import search
+    """calculates the maze distance between two points
+       Point 1 serves as a starting point (generally Pacman's position)
+       Point 2 serves as a goal point (generally position of ghost)
+       Uses a BFS search to do this
+    """
     def mazeDistance(point1, point2, gameState):
         x1, y1 = point1
         x2, y2 = point2
@@ -380,33 +385,68 @@ def betterEvaluationFunction(currentGameState):
         return len(search.bfs(prob))
     
     position = currentGameState.getPacmanPosition()
+    ghostStates = currentGameState.getGhostStates()
+    scaredTimes = [ghostState.scaredTimer for ghostState in ghostStates]
+    
     foodList = currentGameState.getFood().asList()
-    powerPellets = currentGameState.getCapsules()
+    wallList = currentGameState.getWalls().asList()
+    capsuleList = currentGameState.getCapsules() #not used
     
-    score = len(foodList) * -100
+    score = 0
     
-    """get the actual maze distance to the closest ghost using BFS search"""
-    distances = [mazeDistance(position, ghostState.getPosition(), currentGameState) for ghostState in currentGameState.getGhostStates()]
-    minDist = min(distances)
-    if minDist > 3: 
-        score += minDist * 30
-    else:
-        score += minDist * -30
+    """'Hunt' scared ghosts by adding scared times to the score"""
+    for scaredTime in scaredTimes:
+        score += scaredTime
     
-    """get the closest distance to a food pellet"""
-    distancesToFood = [util.manhattanDistance(position, food) for food in foodList] 
-    if distancesToFood != []:
-        distToClosestFood = min(distancesToFood)
+    """get the actual maze distance to the ghosts"""
+    ghostDistances = []
+    for ghostState in ghostStates:
+        ghostDistances += [mazeDistance(position, ghostState.getPosition(), currentGameState)]
+    
+    emptyCoord = 0
+    foodDistances = []
+    
+    """simple function to return a list of neighboring coordinates
+    params: an (x,y) in tuple form
+    returns: list of 4 tuples (coordinates)
+    """
+    def getNeighbors(coord):
+        neighborCoords = []
+        neighborCoords.append((coord[0]-1, coord[1])) #coordinate to the left
+        neighborCoords.append((coord[0]+1, coord[1])) #coordinate to the right
+        neighborCoords.append((coord[0], coord[1]-1)) #coordinate below
+        neighborCoords.append((coord[0], coord[1]+1)) #coordinate above
+        return neighborCoords    
+    
+    """get the food data"""
+    for food in foodList:
+        neighbors = getNeighbors(food)
+        for neighbor in neighbors:
+            ###### calculate the number of empty coordinates using each food coordinate ######
+            if neighbor not in wallList and neighbor not in foodList:
+                emptyCoord += 1
+        foodDistances += [manhattanDistance(position, food)] #list of food distances
         
-    distancesToPower = [util.manhattanDistance(position, power) for power in powerPellets]
-    if distancesToPower != []:
-        distToClosestPower = min(distancesToPower)
+    inverseFood = 0
+    if len(foodDistances) > 0:
+        inverseFood = 1.0/(min(foodDistances)) #the inverse of the minimum food distance
+    """ adding capsule data slowed things incredibly and made Pacman ignore close food
+    capsuleDistances = []
+    for capsule in capsuleList:
+        neighbors = getNeighbors(capsule)
+        for neighbor in neighbors:
+            if neighbor not in wallList and neighbor not in capsuleList:
+                emptyCoord += 1
+        capsuleDistances += [manhattanDistance(position, capsule)]
         
-    score -= 2 * distToClosestFood
-    score -= 120 * distToClosestPower
-                   
+    inverseCapsules = 0
+    if len(capsuleDistances) > 0:
+        inverseCapsules = 1.0/(min(capsuleDistances))"""
+    
+    ### use minimum ghost distance ###
+    score += (min(ghostDistances) * ((inverseFood**4)))
+    score += currentGameState.getScore() - (float(emptyCoord) * 4.5) # give empty coordinates a substantial weight, the more empty the better.           
     return score
-    util.raiseNotDefined()
 
 # Abbreviation
 better = betterEvaluationFunction
